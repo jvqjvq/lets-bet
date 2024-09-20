@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apuestas de Carreras de Caballos Americanas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Apuestas de Carreras de Caballos</h1>
+            <nav>
+                <a href="#home">Inicio</a>
+                <a href="#about">Sobre</a>
+                <a href="#contact">Contacto</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="content">
+            <h2>Realiza tu Apuesta</h2>
+            <form id="bettingForm">
+                <div class="form-group">
+                    <label for="race">Carrera:</label>
+                    <select id="race" name="race">
+                        <!-- Opciones llenadas dinámicamente -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="horse">Caballo:</label>
+                    <select id="horse" name="horse">
+                        <!-- Opciones llenadas dinámicamente -->
+                    </select>
+                    <label for="race">Carrera:</label>
+                    <select id="race" name="race">
+                        <!-- Opciones llenadas dinámicamente -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="caballo" for="horse">Caballo:</label>
+                    <select id="horse" name="horse">
+                        <!-- Opciones llenadas dinámicamente -->
+                    </select>
+
+                </div>
+                <div class="form-group">
+                    <label for="amount">Monto:</label>
+                    <input type="number" id="amount" name="amount" min="1" step="any">
+                </div>
+                <button type="submit" id="betButton">Apostar</button>
+            </form>
+            <div id="raceStatus">
+                <p id="raceStatusText">Carrera en curso: <span id="raceStartTime">0:00</span></p>
+            </div>
+            <div id="loading" class="loading" style="display: none;">Cargando carreras...</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>&copy; 2024 Apuestas de Carreras de Caballos. Todos los derechos reservados.</p>
+    </div>
+
+    <script>
+        const raceSelect = document.getElementById('race');
+        const horseSelect = document.getElementById('horse');
+        const betButton = document.getElementById('betButton');
+        const raceStatusText = document.getElementById('raceStatusText');
+        const raceStartTimeElem = document.getElementById('raceStartTime');
+        const loadingElem = document.getElementById('loading');
+
+        // Función para cargar carreras desde una API
+        async function loadRaces() {
+            loadingElem.style.display = 'block';
+            try {
+                // Reemplaza esta URL con el endpoint de la API real
+                const response = await fetch(' https://api.the-odds-api.com/v4/historical/sports/basketball_nba/events/da359da99aa27e97d38f2df709343998/odds?apiKey=YOUR_API_KEY&date=2023-11-29T22:45:00Z&regions=us&markets=player_points,h2h_q');
+                const races = await response.json();
+                
+                // Llenar el select de carreras
+                raceSelect.innerHTML = '<option value="">Seleccione una carrera</option>';
+                races.forEach(race => {
+                    raceSelect.innerHTML += `<option value="${race.id}" data-start="${race.hora_inicio}" data-horses='${JSON.stringify(race.horses)}'>${race.nombre}</option>`;
+                });
+                
+                loadingElem.style.display = 'none';
+            } catch (error) {
+                loadingElem.style.display = 'none';
+                alert('Error al cargar las carreras.');
+            }
+        }
+
+        // Función para cargar caballos según la carrera seleccionada
+        function loadHorses() {
+            const selectedRaceId = raceSelect.value;
+            const selectedRace = Array.from(raceSelect.options).find(option => option.value === selectedRaceId);
+            const horses = selectedRace ? JSON.parse(selectedRace.getAttribute('data-horses')) : [];
+            
+            horseSelect.innerHTML = '<option value="">Seleccione un caballo</option>';
+            horses.forEach(horse => {
+                horseSelect.innerHTML += `<option value="${horse.id}">${horse.nombre}</option>`;
+            });
+        }
+
+        // Actualizar estado de la carrera
+        function updateRaceStatus() {
+            const now = new Date();
+            const selectedRace = Array.from(raceSelect.options).find(option => option.value === raceSelect.value);
+            if (selectedRace) {
+                const startTime = new Date(selectedRace.getAttribute('data-start'));
+                const timeDiff = startTime - now;
+                if (timeDiff <= 0) {
+                    raceStatusText.textContent = 'La carrera ha comenzado. Ya no se aceptan apuestas.';
+                    betButton.disabled = true;
+                } else {
+                    const minutes = Math.floor(timeDiff / 60000);
+                    const seconds = Math.floor((timeDiff % 60000) / 1000);
+                    raceStartTimeElem.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                    setTimeout(updateRaceStatus, 1000);
+                }
+            }
+        }
+
+        // Manejar el envío del formulario
+        document.getElementById('bettingForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (betButton.disabled) {
+                alert('La carrera ha comenzado, ya no se pueden realizar apuestas.');
+            } else {
+                alert('Apuesta realizada con éxito.');
+            }
+        });
+
+        // Cargar carreras al inicio
+        loadRaces();
+
+        // Actualizar caballos y estado de carrera al seleccionar una carrera
+        raceSelect.addEventListener('change', function () {
+            loadHorses();
+            updateRaceStatus();
+        });
+    </script>
+</body>
+</html>
